@@ -112,6 +112,9 @@ rt_err_t max7219_write(uint8_t dig, uint8_t data)
  */
 rt_err_t max7219_write_num(uint8_t dig, uint8_t num)
 {
+    RT_ASSERT((DECODE_MODE_NO_DEC_FOR_8_1 == _max7219.info.decode_mode) 
+            || (DECODE_MODE_CODE_B_FOR_8_1 == _max7219.info.decode_mode));
+    
     uint8_t value = 0;
 
     if(value > 0x0f)
@@ -119,8 +122,15 @@ rt_err_t max7219_write_num(uint8_t dig, uint8_t num)
         log_e("value falut ,it can't max 0x0f.");
         return -RT_ERROR;
     }
-
-    max7219_reg_write(dig, no_code_buf[num]);
+    
+    if(DECODE_MODE_NO_DEC_FOR_8_1 == _max7219.info.decode_mode)
+    {
+        max7219_reg_write(dig, no_code_buf[num]);
+    }
+    else
+    {
+         max7219_reg_write(dig, num);
+    }
     
     return RT_EOK;
 }
@@ -163,6 +173,8 @@ int drv_max7219_hw_init(void)
     
     rt_spi_configure(_max7219.spi_device, &cfg);
 
+    max7219_init();
+    
     return RT_EOK;
 }
 INIT_APP_EXPORT(drv_max7219_hw_init);
