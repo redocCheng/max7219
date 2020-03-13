@@ -36,10 +36,10 @@ typedef enum
 
 typedef enum
 {
-    DECODE_MODE_NO_DEC_FOR_7_0 = 0,
-    DECODE_MODE_CODE_B_FOR_0_NO_DEC_FOR_7_1 = 0x01,
-    DECODE_MODE_CODE_B_FOR_3_0_NO_DEC_FOR_7_4 = 0x0f,
-    DECODE_MODE_CODE_B_FOR_7_0 = 0xff,
+    DECODE_MODE_NO_DEC_FOR_8_1                  = 0x00,
+    DECODE_MODE_CODE_B_FOR_1_NO_DEC_FOR_8_2     = 0x01,   /*   不支持   */
+    DECODE_MODE_CODE_B_FOR_4_1_NO_DEC_FOR_8_5   = 0x0f,   /*   不支持   */ 
+    DECODE_MODE_CODE_B_FOR_8_1                  = 0xff,
 	
 }decode_mode_t;
 
@@ -51,7 +51,7 @@ typedef enum
 }test_mode_t;
 
 
-//功能寄存器宏定义
+/* 功能寄存器宏定义 */
 #define REG_ADDR_NO_OP        (0x00)
 #define REG_ADDR_DIGIT_0      (0x01)
 #define REG_ADDR_DIGIT_1      (0x02)
@@ -68,13 +68,14 @@ typedef enum
 #define REG_ADDR_DISPTEST     (0X0F)     /*   测试控制寄存器地址   */
 
 
-/* max7219扫描个数  */
+/* max7219扫描个数 不能超过8     */
 #define MAX7219_SCAN_NUM  (0x06) 
 
+ /*  建议只用非编码模式    */
 #define  MAX7219_INFO_DEFAULT    \
 {                                \
     SHUTDOWN_MODE_NORMAL,        \
-    DECODE_MODE_NO_DEC_FOR_7_0,  \
+    DECODE_MODE_NO_DEC_FOR_8_1,  \
     0x0F,                        \
     TEST_MODE_NORMAL,            \
     MAX7219_SCAN_NUM,            \
