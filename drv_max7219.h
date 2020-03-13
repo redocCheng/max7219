@@ -97,10 +97,10 @@ struct drv_max7219_device
 };
 
 void max7219_init(void);
-void max7219_clear(uint8_t dig);
-void max7219_clear_all(void);
-void max7219_write_num(uint8_t dig, uint8_t data);
-void max7219_write(uint8_t dig, uint8_t data);
-void max7219_intensity_set(uint8_t value);
+rt_err_t max7219_clear(uint8_t dig);
+rt_err_t max7219_clear_all(void);
+rt_err_t max7219_write_num(uint8_t dig, uint8_t data);
+rt_err_t max7219_write(uint8_t dig, uint8_t data);
+rt_err_t max7219_intensity_set(uint8_t value);
 
 #endif
