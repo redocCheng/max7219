@@ -29,24 +29,24 @@
 
 typedef enum
 {
-	SHUTDOWN_MODE_SHUTDOWN = 0,
-	SHUTDOWN_MODE_NORMAL,
+    SHUTDOWN_MODE_SHUTDOWN = 0,
+    SHUTDOWN_MODE_NORMAL,
 	
 }shutdown_t;
 
 typedef enum
 {
-	DECODE_MODE_NO_DEC_FOR_7_0 = 0,
-	DECODE_MODE_CODE_B_FOR_0_NO_DEC_FOR_7_1 = 0x01,
-	DECODE_MODE_CODE_B_FOR_3_0_NO_DEC_FOR_7_4 = 0x0f,
-	DECODE_MODE_CODE_B_FOR_7_0 = 0xff,
+    DECODE_MODE_NO_DEC_FOR_7_0 = 0,
+    DECODE_MODE_CODE_B_FOR_0_NO_DEC_FOR_7_1 = 0x01,
+    DECODE_MODE_CODE_B_FOR_3_0_NO_DEC_FOR_7_4 = 0x0f,
+    DECODE_MODE_CODE_B_FOR_7_0 = 0xff,
 	
 }decode_mode_t;
 
 typedef enum
 {
-	TEST_MODE_NORMAL = 0,
-	TEST_MODE_DISPLAY_TEST = 1,
+    TEST_MODE_NORMAL = 0,
+    TEST_MODE_DISPLAY_TEST = 1,
 	
 }test_mode_t;
 
@@ -73,27 +73,27 @@ typedef enum
 
 #define  MAX7219_INFO_DEFAULT    \
 {                                \
-	SHUTDOWN_MODE_NORMAL,        \
-	DECODE_MODE_NO_DEC_FOR_7_0,  \
-	0x0F,                        \
-	TEST_MODE_NORMAL,            \
-	MAX7219_SCAN_NUM,            \
+    SHUTDOWN_MODE_NORMAL,        \
+    DECODE_MODE_NO_DEC_FOR_7_0,  \
+    0x0F,                        \
+    TEST_MODE_NORMAL,            \
+    MAX7219_SCAN_NUM,            \
 }
 
 /*   max7219设置结构体   */
 struct rt_device_max7219_info
 {
-	shutdown_t shutdown_mode;   /*  关断模式    */
-	decode_mode_t decode_mode;	/*  译码模式    */
-	uint8_t intensity;		    /*  亮度(0-f)   */
-	uint8_t work_mode;          /*  工作模式    */
-	uint8_t scan_num;		    /*  扫描个数    */
+    shutdown_t shutdown_mode;   /*  关断模式    */
+    decode_mode_t decode_mode;	/*  译码模式    */
+    uint8_t intensity;          /*  亮度(0-f)   */
+    uint8_t work_mode;          /*  工作模式    */
+    uint8_t scan_num;		    /*  扫描个数    */
 };                                             
 
 struct drv_max7219_device
 {
-	struct rt_spi_device *spi_device;
-	struct rt_device_max7219_info info;
+    struct rt_spi_device *spi_device;
+    struct rt_device_max7219_info info;
 };
 
 void max7219_init(void);
