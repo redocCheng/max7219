@@ -22,6 +22,12 @@ uint8_t no_code_buf[16] = {0x7e, 0x30, 0x6d, 0x79, 0x33, 0x5b, 0x5f, 0x70, 0x7f,
 
 static struct drv_max7219_device _max7219;
 
+static void max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data);
+static int max7219_clear_chip(uint16_t chip, uint8_t dig);
+static int chip_dig_get(uint16_t dig, uint16_t* chip_select, uint8_t *dig_chip);
+static int max7219_write_chip(uint16_t chip, uint8_t dig, uint8_t data);
+static int max7219_write_num_chip(uint16_t chip, uint8_t dig, uint8_t num);
+static int max7219_intensity_set_chip(uint16_t chip, uint8_t value);
 static void max7219_init(void);
 
 /**
@@ -36,15 +42,15 @@ static void max7219_init(void);
 static void max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data)
 {
     RT_ASSERT(chip < MAX7219_CHIPS_NUMBER);
-    
+
     uint8_t send_buf[2 * MAX7219_CHIPS_NUMBER] = {0};
     uint16_t size = 0;
-    
+
     send_buf[0] = cmd;
     send_buf[1] = data;
-    
+
     size = 2 + (2 * chip);
-    
+
     rt_spi_send(_max7219.spi_device, send_buf, size);
 }
 
@@ -55,11 +61,11 @@ static void max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data)
  *
  * @return rt_err_t
  */
-int max7219_clear_chip(uint16_t chip, uint8_t dig)
+static int max7219_clear_chip(uint16_t chip, uint8_t dig)
 {
     RT_ASSERT(dig != 0);
     RT_ASSERT(chip < MAX7219_CHIPS_NUMBER);
-    
+
     if(dig > (_max7219.info.scan_num_buf[chip]))
     {
         log_e("dig num fault.");
@@ -101,10 +107,10 @@ int max7219_clear_all(void)
  *
  * @return int
  */
-int max7219_write_chip(uint16_t chip, uint8_t dig, uint8_t data)
+static int max7219_write_chip(uint16_t chip, uint8_t dig, uint8_t data)
 {
     RT_ASSERT(dig != 0);
-    
+
     if(dig > (_max7219.info.scan_num_buf[chip]))
     {
         log_e("chip dig num fault.");
@@ -116,7 +122,7 @@ int max7219_write_chip(uint16_t chip, uint8_t dig, uint8_t data)
 }
 
 /**
- * get chip and the dig of the chip 
+ * get chip and the dig of the chip
  * @note dig must less the scan_nums.
  *
  * @param dig the dig num(eg.1-->n)
@@ -130,13 +136,13 @@ static int chip_dig_get(uint16_t dig, uint16_t* chip_select, uint8_t *dig_chip)
     RT_ASSERT(chip_select != RT_NULL);
     RT_ASSERT(dig_chip != RT_NULL);
     RT_ASSERT(dig != 0);
-    
+
     if(dig > _max7219.info.scan_nums)
     {
         log_e("dig num fault.");
         return -RT_ERROR;
     }
-    
+
     for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
     {
         if(dig <= _max7219.info.scan_num_buf[chip])
@@ -150,28 +156,28 @@ static int chip_dig_get(uint16_t dig, uint16_t* chip_select, uint8_t *dig_chip)
             dig -= _max7219.info.scan_num_buf[chip];
         }
     }
-    
+
     return -RT_ERROR;
 }
 
 int max7219_write(uint16_t dig, uint8_t data)
 {
     RT_ASSERT(dig != 0);
-    
+
     uint16_t chip_select = 0;
     uint8_t  dig_chip = 0;
-    
+
     if(dig > _max7219.info.scan_nums)
     {
         log_e("dig num fault.");
         return -RT_ERROR;
     }
-    
+
     if(RT_EOK == chip_dig_get(dig, &chip_select, &dig_chip))
     {
         return max7219_write_chip(chip_select, dig_chip, data);
     }
-    
+
     return -RT_ERROR;
 }
 
@@ -212,21 +218,21 @@ static int max7219_write_num_chip(uint16_t chip, uint8_t dig, uint8_t num)
 int max7219_write_num(uint16_t dig, uint8_t num)
 {
     RT_ASSERT(dig != 0);
-    
+
     uint16_t chip_select = 0;
     uint8_t  dig_chip = 0;
-    
+
     if(dig > _max7219.info.scan_nums)
     {
         log_e("dig num fault.");
         return -RT_ERROR;
     }
-    
+
     if(RT_EOK == chip_dig_get(dig, &chip_select, &dig_chip))
     {
         return max7219_write_num_chip(chip_select, dig_chip, num);
     }
-    
+
     return -RT_ERROR;
 }
 
@@ -267,7 +273,7 @@ int max7219_intensity_set(uint8_t value)
 static void max7219_init(void)
 {
     _max7219.info.scan_nums = 0;
-    
+
     for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
     {
         max7219_reg_write(chip, REG_ADDR_SHUTDOWN, _max7219.info.shutdown_mode);
@@ -275,10 +281,10 @@ static void max7219_init(void)
         max7219_reg_write(chip, REG_ADDR_DECODEMODE, _max7219.info.decode_mode);
         max7219_reg_write(chip, REG_ADDR_SCANLIMIT, _max7219.info.scan_num_buf[chip]);
         max7219_reg_write(chip, REG_ADDR_INTENSITY, _max7219.info.intensity);
-        
+
         _max7219.info.scan_nums += _max7219.info.scan_num_buf[chip];
     }
-    
+
     log_d("max7219 init.");
 }
 
