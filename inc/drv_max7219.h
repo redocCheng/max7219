@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Anke Development Team
+ * Copyright (c) 2019, redocCheng
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -12,13 +12,22 @@
 #define __DRV_MAX7219_H
 #include <rtthread.h>
 #include "rtdevice.h"
+#include "max7219_cfg.h"
 
-#define MAX7219_SPI_BUS_NAME     PKG_MAX7219_SPI_BUS_NAME
 
-#define MAX7219_SPI_DEVICE_NAME  PKG_MAX7219_SPI_DEVICE_NAME
+/* check chips number definition */
+#if !defined(MAX7219_CHIPS_NUMBER)
+#error "You must defined MAX7219_CHIPS_NUMBER on 'max7219_cfg.h'"
+#endif
 
-#define MAX7219_SCAN_NUM         (PKG_MAX7219_SCAN_NUM)
+#if (MAX7219_CHIPS_NUMBER == 0)
+#error "MAX7219_CHIPS_NUMBER can't be 0, You must redefined it on 'max7219_cfg.h'"
+#endif
 
+/* check partition table definition */
+#if !defined(MAX7219_CHIPS_SCAN_NUMBER_TABLE)
+#error "You must defined MAX7219_CHIPS_SCAN_NUMBER_TABLE on 'max7219_cfg.h'"
+#endif
 
 typedef enum
 {
@@ -61,23 +70,25 @@ typedef enum
 
 
 /*  支持非编码模式和全编码模式，建议只用非编码模式  所以这里不加编码配置选项  */
-#define  MAX7219_INFO_DEFAULT    \
-{                                \
-    SHUTDOWN_MODE_NORMAL,        \
-    DECODE_MODE_NO_DEC_FOR_8_1,  \
-    0x0F,                        \
-    TEST_MODE_NORMAL,            \
-    MAX7219_SCAN_NUM,            \
+#define  MAX7219_INFO_DEFAULT          \
+{                                      \
+    SHUTDOWN_MODE_NORMAL,              \
+    DECODE_MODE_NO_DEC_FOR_8_1,        \
+    0x0F,                              \
+    TEST_MODE_NORMAL,                  \
+    MAX7219_CHIPS_SCAN_NUMBER_TABLE,   \
+    0,                                 \
 }
 
 /*   max7219设置结构体   */
 struct rt_device_max7219_info
 {
-    shutdown_t shutdown_mode;   /*  关断模式    */
-    decode_mode_t decode_mode;	/*  译码模式    */
-    uint8_t intensity;          /*  亮度(0-f)   */
-    uint8_t work_mode;          /*  工作模式    */
-    uint8_t scan_num;           /*  扫描个数    */
+    shutdown_t    shutdown_mode;                            /*  关断模式        */
+    decode_mode_t decode_mode;	                            /*  译码模式        */
+    uint8_t       intensity;                                /*  亮度(0-f)       */
+    uint8_t       work_mode;                                /*  工作模式        */
+    uint8_t       scan_num_buf[MAX7219_CHIPS_NUMBER];       /*  单片扫描个数    */
+    uint16_t      scan_nums;                                /*  扫描总数        */  
 };                                             
 
 struct drv_max7219_device
@@ -86,10 +97,9 @@ struct drv_max7219_device
     struct rt_device_max7219_info info;
 };
 
-int max7219_clear(uint8_t dig);
 int max7219_clear_all(void);
-int max7219_write_num(uint8_t dig, uint8_t data);
-int max7219_write(uint8_t dig, uint8_t data);
+int max7219_write_num(uint16_t dig, uint8_t data);
+int max7219_write(uint16_t dig, uint8_t data);
 int max7219_intensity_set(uint8_t value);
 
 #endif
