@@ -137,9 +137,26 @@ static uint8_t scan_limit_get(uint8_t scan_num)
 static uint8_t num_to_dig(uint16_t chip, uint8_t num)
 {
     RT_ASSERT((num > 0) && (num <= 8));
+    RT_ASSERT(num <= chip_tab_num_buf[_max7219.info.scan_num_buf[chip]]);
 
     uint8_t value = _max7219.info.scan_num_buf[chip];
 
+    /* continuous */
+    switch(value)
+    {
+    case 0xff:
+    case 0xfe:
+    case 0xfc:
+    case 0xf8:
+    case 0xf0:
+    case 0xe0:
+    case 0xc0:
+    case 0x80:
+        return num;
+        break;
+    }
+
+    /* Discontinuous */
     for(uint8_t i = 1; i <= 8; i++)
     {
         if((value & 0x80) && (num == 1))
@@ -170,13 +187,7 @@ static int dig_all_to_chip(uint16_t dig_all, uint16_t* chip_select, uint8_t *dig
 {
     RT_ASSERT(chip_select != RT_NULL);
     RT_ASSERT(dig_chip != RT_NULL);
-    RT_ASSERT(dig_all != 0);
-
-    if(dig_all > _max7219.info.scan_nums)
-    {
-        log_e("dig num fault.");
-        return -RT_ERROR;
-    }
+    RT_ASSERT((dig_all != 0) && (dig_all <= _max7219.info.scan_nums));
 
     for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
     {
