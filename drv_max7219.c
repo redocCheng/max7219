@@ -177,5 +177,5 @@ int drv_max7219_hw_init(void)
     
     return RT_EOK;
 }
-INIT_APP_EXPORT(drv_max7219_hw_init);
+INIT_DEVICE_EXPORT(drv_max7219_hw_init);
 
