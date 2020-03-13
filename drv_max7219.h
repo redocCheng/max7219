@@ -87,7 +87,7 @@ struct rt_device_max7219_info
     decode_mode_t decode_mode;	/*  译码模式    */
     uint8_t intensity;          /*  亮度(0-f)   */
     uint8_t work_mode;          /*  工作模式    */
-    uint8_t scan_num;		    /*  扫描个数    */
+    uint8_t scan_num;           /*  扫描个数    */
 };                                             
 
 struct drv_max7219_device
