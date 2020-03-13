@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2019-11-19     redoc        the first version
+ * 2020-01-19     redoc        the first version
  */
 
 #include <rtthread.h>
@@ -20,6 +20,6 @@ static int rt_hw_spi_max7219_init(void)
 
     return RT_EOK;
 }
-INIT_COMPONENT_EXPORT(rt_hw_spi_max7219_init);
+INIT_PREV_EXPORT(rt_hw_spi_max7219_init);
 
 
