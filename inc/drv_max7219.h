@@ -87,7 +87,7 @@ struct rt_device_max7219_info
     decode_mode_t decode_mode;	                            /*  译码模式        */
     uint8_t       intensity;                                /*  亮度(0-f)       */
     uint8_t       work_mode;                                /*  工作模式        */
-    uint8_t       scan_num_buf[MAX7219_CHIPS_NUMBER];       /*  单片扫描个数    */
+    uint8_t      scan_num_buf[MAX7219_CHIPS_NUMBER];       /*  单片扫描个数    */
     uint16_t      scan_nums;                                /*  扫描总数        */  
 };                                             
 
@@ -97,6 +97,7 @@ struct drv_max7219_device
     struct rt_device_max7219_info info;
 };
 
+int max7219_clear(uint16_t dig);
 int max7219_clear_all(void);
 int max7219_write_num(uint16_t dig, uint8_t data);
 int max7219_write(uint16_t dig, uint8_t data);

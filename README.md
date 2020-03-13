@@ -34,28 +34,33 @@ max7219 package 遵循 Apache-2.0 许可，详见 `LICENSE` 文件。
 
 使用 max7219 package 需要在 RT-Thread 的包管理器中选择它，具体路径如下：
 
-```
+```shell
 RT-Thread online packages
     peripheral libraries and drivers --->
         [*] MAX7219: for the digital tube
-            (6)   the num of the digital tubes                                                     
-            (spi1) spi bus name                                                                     
-            (spi10) spi device name                  
+            (1)   the chips of digital tubes
+            (spi1) spi bus name
+            (spi10) spi device name
                 Version (v1.0.0)  --->
 ```
 
 然后让 RT-Thread 的包管理器自动更新，或者使用 `pkgs --update` 命令更新包到 BSP 中。
 
-## 使用 max7219
 
-在打开 max7219 package 后，当进行 bsp 编译时，它会被加入到 bsp 工程中进行编译。
+## 设置参数
+
+配置时需要修改项目中的 `max7219_cfg.h` 文件，只有一项 `MAX7219_CHIPS_SCAN_NUMBER_TABLE` 需要手动设置
+
+
+
+
 
 ## API说明
 
 1. 消隐数码管
 
 ```C
-int max7219_clear(uint8_t dig)
+int max7219_clear(uint16_t dig)
 ```
 
 |参数|注释|
@@ -84,7 +89,7 @@ int max7219_clear_all(void)
 3. 向数码管寄存器写入数据
 
 ```C
-int max7219_write(uint8_t dig, uint8_t data)
+int max7219_write(uint16_t dig, uint8_t data)
 ```
 
 |参数|注释|
@@ -99,7 +104,7 @@ int max7219_write(uint8_t dig, uint8_t data)
 4. 向数码管寄存器写入数字
 
 ```C
-int max7219_write_num(uint8_t dig, uint8_t num)
+int max7219_write_num(uint16_t dig, uint8_t num)
 ```
 
 |参数|注释|
@@ -142,7 +147,7 @@ int max7219_intensity_set(uint8_t value)
 2. 支持非编码模式和全编码模式，建议只用非编码模式，所以不加编码配置选项，可以在[drv_max7219.h](./inc/drv_max7219.h)的 `MAX7219_INFO_DEFAULT` 选择配置。
 3. 你还可以搞自定义字符，不过编码要去手册里面找，比如 写出 `r` 的编码为 0x05。
 4. 亮度只支持 0 到 f。
-5. 还没有用到级联，以及点阵的驱动，后续会在这块优化更新。
+5. 还没有用到点阵的驱动，后续会在这块优化更新。
 
 ## 5、联系方式 & 感谢
 

@@ -12,6 +12,7 @@
 #define __DRV_MAX7219_CFG_H
 
 #include "rtconfig.h"
+#include "stdint.h"
 
 
 #define MAX7219_SPI_BUS_NAME     PKG_MAX7219_SPI_BUS_NAME
@@ -20,25 +21,12 @@
 
 #define MAX7219_CHIPS_NUMBER     PKG_MAX7219_CHIPS_NUMBER
 
+
 /* scan digs of the chips */
 #define MAX7219_CHIPS_SCAN_NUMBER_TABLE     \
 {                                           \
-    6,                                      \
+    0xfC,                                   \
 }
-
-/* eg.
-
-#define MAX7219_CHIPS_NUMBER               (4)
-
-#define MAX7219_CHIPS_SCAN_NUMBER_TABLE     \
-{                                           \
-    8,                                      \
-    8,                                      \
-    8,                                      \
-    8,                                      \
-}
-
-*/
 
 
 
