@@ -19,6 +19,7 @@
 | inc  | 头文件目录 |
 | src  | 源代码目录 |
 | port | 移植目录 |
+| doc |  文档 |
 
 ##  许可证
 
@@ -64,7 +65,7 @@ RT-Thread online packages
 
 ### 芯片的共极配置
 `MAX7219_CHIPS_SCAN_NUMBER_TABLE` 配置单个芯片的共极，以便后续扫描计算；
-每个max7219可支持8个数码管，所以这里采用二进制从左到右进行表示，既 `0B11111111`
+每个max7219可支持8个数码管，所以这里采用二进制从左到右进行表示，既 `0B11111111`，有为 1 ，没有为 0。
 比如挂了一个芯片，用了dig 1到6,应设置 `0B11111100` ，对应十六进制 0xfc。
 
 ```C
@@ -79,11 +80,16 @@ RT-Thread online packages
 ```C
 #define MAX7219_CHIPS_SCAN_NUMBER_TABLE     \
 {                                           \
-    0xff,                                   \
-    0xff,                                   \
-    0xff,                                   \
+    0xfc,                                   \
+    0xa5,                                   \
+    0x3f,                                   \
 }
 ```
+
+如下图，从左到右显示：
+
+![config.png](https://github.com/redocCheng/max7219/blob/master/examples/figer/config.png)
+
 
 
 ## API说明
@@ -193,12 +199,12 @@ int max7219_intensity_set(uint8_t value)
 
 ## 注意事项
 
-1. 参数中的dig和硬件设计的数码管顺序有关。
-2. 建议只用非编码模式，所以不加编码配置选项，可以在[drv_max7219.h](./inc/drv_max7219.h)的 `MAX7219_INFO_DEFAULT` 选择配置。
-3. 你还可以搞其他自定义字符，不过编码要去手册里面找。
-5. 还没有用到点阵的驱动，后续会在这块优化更新。
+1. 配置参数中的dig和硬件设计的数码管顺序有关。
+2. 建议只用非编码模式，所以不加编码配置选项，可以在[drv_max7219.h](./inc/drv_max7219.h)的 `MAX7219_INFO_DEFAULT` 选择配置,并且采用`max7219_write_dig`函数去操作。
+3. 其他自定义字符，编码要去手册里面找，操作方式同上。
+4. 还没有用到点阵的驱动，后续可能会在这块优化更新。
 
-## 5、联系方式 & 感谢
+## 联系方式 & 感谢
 
 * 维护：redoccheng
 * 主页：<https://github.com/redocCheng/max7219>
