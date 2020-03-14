@@ -204,7 +204,7 @@ int max7219_intensity_set(uint8_t value)
 
 ## 芯片手册
 
-芯片手册在 [docs](./docs) 下。
+芯片手册在 [max7219.pdf](https://www.ic37.com/pdf/pdf_download.asp?id=13030329_46310) 下。
 
 ## 注意事项
 
