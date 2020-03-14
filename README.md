@@ -177,7 +177,6 @@ int max7219_intensity_set(uint8_t value)
 |参数|注释|
 |----|----|
 |value|设置亮度（0-0x0f）|
-
 |返回|注释|
 |----|----|
 |RT_EOK|成功|
