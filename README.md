@@ -86,6 +86,15 @@ RT-Thread online packages
 }
 ```
 
+芯片配置如下表：
+
+|  | 芯片一|芯片二|芯片三|
+|----|----|----|----|
+|配置| 0xfc | 0xa5 | 0x3f  |
+|芯片配置|`1 1 1 1 1 1 0 0 `| `1 0 1 0 0 1 0 1`|`0 0 1 1 1 1 1 1`
+|位置标号|1 2 3 4 5 6 - - |7 - 8 - - 9 - 10 | - - 11 12 13 14 15 16  |
+
+
 如下图，从左到右显示：
 
 ![config.png](https://github.com/redocCheng/max7219/blob/master/examples/figer/config.png)
