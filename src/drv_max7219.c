@@ -17,8 +17,16 @@
 #define LOG_TAG "drv.max7219"
 #include <drv_log.h>
 
-/* 解码数组 */
-const uint8_t chip_tab_num_buf[256] =   \
+
+struct drv_max7219_device
+{
+    struct rt_spi_device *spi_device;
+    struct rt_device_max7219_info info;
+};
+
+
+/* Number of one array */
+const uint8_t one_number_buf[256] =   \
 {
 0, 1, 1, 2, 1, 2, 2, 3,     \
 1, 2, 2, 3, 2, 3, 3, 4,     \
@@ -54,17 +62,17 @@ const uint8_t chip_tab_num_buf[256] =   \
 5, 6, 6, 7, 6, 7, 7, 8,     \
 };
 
-/*  非编码模式十六进制单个编码  */
-const uint8_t no_code_buf[16] = {0x7e, 0x30, 0x6d, 0x79, 0x33, 0x5b, 0x5f, 0x70, 0x7f, 0x7b, 0x77, 0x1f, 0x0d, 0x3d, 0x4f, 0x47};
+/*  Non-encoding mode Hex single encoding  */
+const uint8_t no_code_num_buf[16] = {0x7e, 0x30, 0x6d, 0x79, 0x33, 0x5b, 0x5f, 0x70, 0x7f, 0x7b, 0x77, 0x1f, 0x0d, 0x3d, 0x4f, 0x47};
 
 static struct drv_max7219_device _max7219;
 
 static void max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data);
-static uint8_t scan_limit_get(uint8_t scan_num);
-static uint8_t num_to_dig(uint16_t chip, uint8_t num);
-static int dig_all_to_chip(uint16_t dig, uint16_t* chip_select, uint8_t *dig_chip);
+static uint8_t position_of_last_one(uint8_t dig_config);
+static uint8_t dig_of_the_chip(uint16_t chip, uint8_t position);
+static int position_of_device(uint16_t dig_num, uint16_t* chip_select, uint8_t *dig_select);
 static int max7219_write_chip(uint16_t chip, uint8_t dig, uint8_t data);
-static int max7219_write_num_chip(uint16_t chip, uint8_t dig, uint8_t num);
+static int max7219_write_dig_chip(uint16_t chip, uint8_t dig, uint8_t data);
 static void max7219_init(void);
 
 /**
@@ -92,32 +100,31 @@ static void max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data)
 }
 
 /**
- * get the max limit of dig right num
- * @note chip 1 if 0xf0  return 4
- * @note chip 2 if 0xf1  return 8
+ *   Calculate the position of right 1
+ * @note get the max limit of dig right num
  *
- * @param scan_num  the dig config
+ * @param dig_config  the dig config
  *
  * @return dig
  */
-static uint8_t scan_limit_get(uint8_t scan_num)
+static uint8_t position_of_last_one(uint8_t dig_config)
 {
-    RT_ASSERT((scan_num > 0) && (scan_num <= 8));
+    RT_ASSERT(dig_config <= 8);
 
-    if(scan_num == 0)
+    if(dig_config == 0)
     {
         return 0;
     }
 
     for(uint8_t i = 8; i >= 1; i--)
     {
-        if(scan_num & 0x01)
+        if(dig_config & 0x01)
         {
             return i;
         }
         else
         {
-            scan_num >>= 1;
+            dig_config >>= 1;
         }
     }
 
@@ -125,19 +132,19 @@ static uint8_t scan_limit_get(uint8_t scan_num)
 }
 
 /**
- * get the Discontinuous dig
- * @note chip 1 if 0xf0 num is 3  return 3
- * @note chip 1 if 0xf1 num is 5 return 8
+ * Calculate the dig on this chip
+ * @note postion is continuous,but dig may not be continuous
+ * @note chip 0 config is 0xf1 , position is 5 then return 8
  *
- * @param chip the chip
- * @param num  the dig continuous
+ * @param chip the select chip
+ * @param position the position
  *
  * @return dig
  */
-static uint8_t num_to_dig(uint16_t chip, uint8_t num)
+static uint8_t dig_of_the_chip(uint16_t chip, uint8_t position)
 {
-    RT_ASSERT((num > 0) && (num <= 8));
-    RT_ASSERT(num <= chip_tab_num_buf[_max7219.info.scan_num_buf[chip]]);
+    RT_ASSERT((position > 0) && (position <= 8));
+    RT_ASSERT(position <= one_number_buf[_max7219.info.scan_num_buf[chip]]);
 
     uint8_t value = _max7219.info.scan_num_buf[chip];
 
@@ -152,21 +159,23 @@ static uint8_t num_to_dig(uint16_t chip, uint8_t num)
     case 0xe0:
     case 0xc0:
     case 0x80:
-        return num;
+        return position;
         break;
     }
 
     /* Discontinuous */
-    for(uint8_t i = 1; i <= 8; i++)
+    for( i = 1; i <= 8; i++)
     {
-        if((value & 0x80) && (num == 1))
+        if(value & 0x80)
         {
-            return i;
-        }
-
-        if(num > 1)
-        {
-            num --;
+            if(position == 1)
+            {
+                return i;
+            }
+            else
+            {
+                position --;
+            }
         }
         value <<= 1;
     }
@@ -174,32 +183,32 @@ static uint8_t num_to_dig(uint16_t chip, uint8_t num)
 }
 
 /**
- * get chip and the dig of the chip
+ * calculate the position of device,
  * @note dig must less the scan_nums.
  *
- * @param dig the dig num(eg.1-->n)
+ * @param dig the continuous dig num
  * @param chip_select return the chip
  * @param dig_chip    return the dig
  *
  * @return int
  */
-static int dig_all_to_chip(uint16_t dig_all, uint16_t* chip_select, uint8_t *dig_chip)
+static int position_of_device(uint16_t dig_num, uint16_t* chip_select, uint8_t *dig_select)
 {
     RT_ASSERT(chip_select != RT_NULL);
     RT_ASSERT(dig_chip != RT_NULL);
-    RT_ASSERT((dig_all != 0) && (dig_all <= _max7219.info.scan_nums));
+    RT_ASSERT((dig_num != 0) && (dig_num <= _max7219.info.scan_nums));
 
     for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
     {
-        if(dig_all <= chip_tab_num_buf[_max7219.info.scan_num_buf[chip]])
+        if(dig_num <= one_number_buf[_max7219.info.scan_num_buf[chip]])
         {
             *chip_select = chip;
-            *dig_chip = num_to_dig(chip, dig_all);
+            *dig_select = dig_of_the_chip(chip, dig_num);
             return RT_EOK;
         }
         else
         {
-            dig_all -= chip_tab_num_buf[_max7219.info.scan_num_buf[chip]];
+            dig_num -= one_number_buf[_max7219.info.scan_num_buf[chip]];
         }
     }
 
@@ -207,66 +216,15 @@ static int dig_all_to_chip(uint16_t dig_all, uint16_t* chip_select, uint8_t *dig
 }
 
 /**
- * the Digital tubes blanking.
-
- * @param dig  1 to scan_nums
- *
- * @return rt_err_t
- */
-int max7219_clear(uint16_t dig)
-{
-    RT_ASSERT(dig != 0);
-
-    uint16_t chip_select = 0;
-    uint8_t  dig_chip = 0;
-
-    if(dig > _max7219.info.scan_nums)
-    {
-        log_e("dig num fault.");
-        return -RT_ERROR;
-    }
-
-    if(RT_EOK == dig_all_to_chip(dig, &chip_select, &dig_chip))
-    {
-        return max7219_write_chip(chip_select, dig_chip, 0);
-    }
-
-    return -RT_ERROR;
-}
-
-/**
- * all the Digital tubes blanking.
- * @note 1 to scan_num.
- *
- * @return rt_err_t
- */
-int max7219_clear_all(void)
-{
-    uint8_t limit;
-
-    for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
-    {
-        limit = scan_limit_get(_max7219.info.scan_num_buf[chip]);
-
-        for(uint8_t dig = 1; dig <= limit; dig++)
-        {
-            max7219_reg_write(chip, dig, 0);
-        }
-    }
-    return RT_EOK;
-}
-
-/**
- * Write data to max7219.
- * @note dig must less the scan_num.
+ * Input line segment to register
  *
  * @param chip the chip select
- * @param dig the dig num(eg.1-->8)
- * @param data write the dig data(eg.0x7e is num 0)
+ * @param dig Position in a single nixie tube
+ * @param data Corresponding Segment Line
  *
  * @return int
  */
-static int max7219_write_chip(uint16_t chip, uint8_t dig, uint8_t data)
+static int max7219_write_dig_chip(uint16_t chip, uint8_t dig, uint8_t data)
 {
     RT_ASSERT(dig != 0);
 
@@ -281,16 +239,107 @@ static int max7219_write_chip(uint16_t chip, uint8_t dig, uint8_t data)
 }
 
 /**
- * Write data to max7219.with chip
- * @note set num if use BCODE
+ * Write numbers and characters to the register through the digital tube number
+ * @note
  *
  * @param chip the chip select
- * @param dig the dig of the chip
- * @param data write the data
+ * @param dig Position in a single nixie tube
+ * @param data Numbers and characters
  *
  * @return int return result
  */
-int max7219_write(uint16_t dig, uint8_t data)
+static int max7219_write_chip(uint16_t chip, uint8_t dig, uint8_t data)
+{
+    RT_ASSERT(DECODE_MODE_NO_DEC_FOR_8_1 == _max7219.info.decode_mode);
+
+    uint8_t value = 0;
+    uint8_t dp = 0;
+
+    if(data & 0x80)
+    {
+        dp = 0x80;
+        data &= 0x7f;
+    }
+
+    if(data <= 0x0f)
+    {
+        value = no_code_num_buf[data];
+    }
+    else
+    {
+        switch(data)
+        {
+        case ' ':
+            value = 0x00;
+            break;
+        case '_':
+            value = 0x08;
+            break;
+        case '-':
+            value = 0x01;
+            break;
+        case '.':
+            value = 0x80;
+            break;
+        case 'r':
+            value = 0x05;
+            break;
+        case 'p':
+        case 'P':
+            value = 0x67;
+            break;
+        case 'L':
+            value = 0x0E;
+            break;
+        case 'H':
+            value = 0x37;
+            break;
+        case 'h':
+            value = 0x17;
+            break;
+        default:
+            return -RT_ERROR;
+        }
+    }
+
+    value |= dp;
+
+    max7219_reg_write(chip, dig, value);
+
+    return RT_EOK;
+}
+
+/**
+ * all the Digital tubes blanking.
+ *
+ * @return int
+ */
+int max7219_clear_all(void)
+{
+    uint8_t limit;
+
+    for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
+    {
+        limit = position_of_last_one(_max7219.info.scan_num_buf[chip]);
+
+        for(uint8_t dig = 1; dig <= limit; dig++)
+        {
+            max7219_reg_write(chip, dig, 0);
+        }
+    }
+    return RT_EOK;
+}
+
+/**
+ * Write data directly to the register through the digital tube number
+ * @note with data sheet (DP/A/B/C/D/E/F/G)
+ *
+ * @param dig Position in all digital tubes
+ * @param data  Corresponding Segment Line
+ *
+ * @return int return result
+ */
+int max7219_write_dig(uint16_t dig, uint8_t data)
 {
     RT_ASSERT(dig != 0);
 
@@ -312,50 +361,15 @@ int max7219_write(uint16_t dig, uint8_t data)
 }
 
 /**
- * Write num to max7219.with chip
- * @note support 0x0 to 0xf.
+ * Write numbers and characters to the register through the digital tube number
+ * @note support digtal 0x0 to 0xf.,support char ' ' '-' '_' 'H' 'h' 'P' 'p' 'r' '.
  *
- * @param chip the chip select
- * @param dig the dig of the chip
- * @param num write the num
+ * @param dig Position in all digital tubes
+ * @param data numbers and characters
  *
- * @return int return result
+ * @return int
  */
-static int max7219_write_num_chip(uint16_t chip, uint8_t dig, uint8_t num)
-{
-    RT_ASSERT((DECODE_MODE_NO_DEC_FOR_8_1 == _max7219.info.decode_mode)
-            || (DECODE_MODE_CODE_B_FOR_8_1 == _max7219.info.decode_mode));
-
-    uint8_t value = 0;
-
-    if(value > 0x0f)
-    {
-        log_e("value falut ,it can't max 0x0f.");
-        return -RT_ERROR;
-    }
-
-    if(DECODE_MODE_NO_DEC_FOR_8_1 == _max7219.info.decode_mode)
-    {
-        max7219_reg_write(chip, dig, no_code_buf[num]);
-    }
-    else
-    {
-        max7219_reg_write(chip, dig, num);
-    }
-
-    return RT_EOK;
-}
-
-/**
- * Write num to max7219.
- * @note support 0x0 to 0xf.
- *
- * @param dig the dig of all the digs
- * @param num write the num
- *
- * @return int return result
- */
-int max7219_write_num(uint16_t dig, uint8_t num)
+int max7219_write(uint16_t dig, uint8_t data)
 {
     RT_ASSERT(dig != 0);
 
@@ -370,19 +384,19 @@ int max7219_write_num(uint16_t dig, uint8_t num)
 
     if(RT_EOK == dig_all_to_chip(dig, &chip_select, &dig_chip))
     {
-        return max7219_write_num_chip(chip_select, dig_chip, num);
+        return max7219_write_chip(chip_select, dig_chip, num);
     }
 
     return -RT_ERROR;
 }
 
 /**
- * intensity set.
+ * Adjust brightness
  * @note no note.
  *
- * @param value set the intensity (0x0 to 0xf)
+ * @param value (0x0 ~ 0xf)
  *
- * @return int return result
+ * @return int
  */
 int max7219_intensity_set(uint8_t value)
 {
@@ -406,10 +420,10 @@ static void max7219_init(void)
         max7219_reg_write(chip, REG_ADDR_DISPTEST, _max7219.info.work_mode);
         max7219_reg_write(chip, REG_ADDR_DECODEMODE, _max7219.info.decode_mode);
 
-        max7219_reg_write(chip, REG_ADDR_SCANLIMIT, scan_limit_get(_max7219.info.scan_num_buf[chip]));
+        max7219_reg_write(chip, REG_ADDR_SCANLIMIT, position_of_last_one(_max7219.info.scan_num_buf[chip]) - 1);
         max7219_reg_write(chip, REG_ADDR_INTENSITY, _max7219.info.intensity);
 
-        _max7219.info.scan_nums += chip_tab_num_buf[_max7219.info.scan_num_buf[chip]];
+        _max7219.info.scan_nums += one_number_buf[_max7219.info.scan_num_buf[chip]];
     }
 
     log_d("max7219 init.");

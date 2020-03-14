@@ -33,23 +33,23 @@ typedef enum
 {
     SHUTDOWN_MODE_SHUTDOWN = 0,
     SHUTDOWN_MODE_NORMAL,
-	
+
 }shutdown_t;
 
 typedef enum
 {
     DECODE_MODE_NO_DEC_FOR_8_1                  = 0x00,
     DECODE_MODE_CODE_B_FOR_1_NO_DEC_FOR_8_2     = 0x01,   /*   不支持   */
-    DECODE_MODE_CODE_B_FOR_4_1_NO_DEC_FOR_8_5   = 0x0f,   /*   不支持   */ 
+    DECODE_MODE_CODE_B_FOR_4_1_NO_DEC_FOR_8_5   = 0x0f,   /*   不支持   */
     DECODE_MODE_CODE_B_FOR_8_1                  = 0xff,
-	
+
 }decode_mode_t;
 
 typedef enum
 {
     TEST_MODE_NORMAL = 0,
     TEST_MODE_DISPLAY_TEST = 1,
-	
+
 }test_mode_t;
 
 /* 功能寄存器宏定义 */
@@ -87,19 +87,12 @@ struct rt_device_max7219_info
     decode_mode_t decode_mode;	                            /*  译码模式        */
     uint8_t       intensity;                                /*  亮度(0-f)       */
     uint8_t       work_mode;                                /*  工作模式        */
-    uint8_t      scan_num_buf[MAX7219_CHIPS_NUMBER];       /*  单片扫描个数    */
-    uint16_t      scan_nums;                                /*  扫描总数        */  
-};                                             
-
-struct drv_max7219_device
-{
-    struct rt_spi_device *spi_device;
-    struct rt_device_max7219_info info;
+    uint8_t      scan_num_buf[MAX7219_CHIPS_NUMBER];        /*  单片扫描个数    */
+    uint16_t      scan_nums;                                /*  扫描总数        */
 };
 
-int max7219_clear(uint16_t dig);
 int max7219_clear_all(void);
-int max7219_write_num(uint16_t dig, uint8_t data);
+int max7219_write_dig(uint16_t dig, uint8_t data);
 int max7219_write(uint16_t dig, uint8_t data);
 int max7219_intensity_set(uint8_t value);
 
