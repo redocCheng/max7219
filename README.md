@@ -49,30 +49,47 @@ RT-Thread online packages
 
 ## 设置参数
 
-配置时需要修改项目中的 `max7219_cfg.h` 文件，只有一项 `MAX7219_CHIPS_SCAN_NUMBER_TABLE` 需要手动设置
+
+配置时需要修改项目中的 `max7219_cfg.h` 文件，和配置 menuconfig。
+
+### 芯片数量：
+`MAX7219_CHIPS_NUMBER`  可通过 menuconfig 中的 `(1)   the chips of digital tubes` 选项设置，
 
 
+也可以直接在 `max7219_cfg.h` cfg 文件中设置，一片就设置 1。
+```C
+#define MAX7219_CHIPS_NUMBER    1
+```
 
+
+### 芯片的共极配置
+`MAX7219_CHIPS_SCAN_NUMBER_TABLE` 配置单个芯片的共极，以便后续扫描计算；
+每个max7219可支持8个数码管，所以这里采用二进制从左到右进行表示，既 `0B11111111`
+比如挂了一个芯片，用了dig 1到6,应设置 `0B11111100` ，对应十六进制 0xfc。
+
+```C
+#define MAX7219_CHIPS_SCAN_NUMBER_TABLE     \
+{                                           \
+    0xfc,                                   \
+}
+```
+
+两个及其多个芯片级联时，只需要根据芯片顺序，依次往下配置即可，
+例如，级联了3片芯片：
+```C
+#define MAX7219_CHIPS_SCAN_NUMBER_TABLE     \
+{                                           \
+    0xff,                                   \
+    0xff,                                   \
+    0xff,                                   \
+}
+```
 
 
 ## API说明
 
-1. 消隐数码管
 
-```C
-int max7219_clear(uint16_t dig)
-```
-
-|参数|注释|
-|----|----|
-|dig|选择的数码管|
-
-|返回|注释|
-|----|----|
-|RT_EOK|正常|
-|-RT_ERROR|异常|
-
-2. 消隐全部数码管
+1. 消隐全部数码管
 
 ```C
 int max7219_clear_all(void)
@@ -86,35 +103,69 @@ int max7219_clear_all(void)
 |RT_EOK|正常|
 |-RT_ERROR|异常|
 
-3. 向数码管寄存器写入数据
+3. 向数码管寄存器写入线段数据
 
 ```C
-int max7219_write(uint16_t dig, uint8_t data)
+int max7219_write_dig(uint16_t dig, uint8_t data);
 ```
 
 |参数|注释|
 |----|----|
-|dig|选择的数码管|
+|dig|在所有数码管中的位置，未加入配置的数码管，不进行计数|
 |data|数据|
 |返回|注释|
 |----|----|
 |RT_EOK|正常|
 |-RT_ERROR|异常|
 
-4. 向数码管寄存器写入数字
+说明：直接将数据写入显示寄存器，即直接控制(DP/A/B/C/D/E/F/G)。
+
+4. 向数码管寄存器写入数字和字符
 
 ```C
-int max7219_write_num(uint16_t dig, uint8_t num)
+int max7219_write(uint16_t dig, uint8_t data);
 ```
 
 |参数|注释|
 |----|----|
-|dig|选择的数码管|
-|num|数字（范围0-0xf） 输入 0 就显示 0|
+|dig|在所有数码管中的位置，同上|
+|data|数字、字符和点|
 |返回|注释|
 |----|----|
 |RT_EOK|正常|
 |-RT_ERROR|异常|
+
+
+说明：支持数字：0-0xf；支持右方字符： `' '`（空格）、 `'-'`、 `'_'`、 `'H'`、 `'h'`、 `'P'`、 `'p'`、 `'r'` 、`.`；当最高位有效时，即 0x80，同时显示点。
+
+```C
+    max7219_write(1,1);
+    max7219_write(2,2);
+    max7219_write(3,3);
+    max7219_write(4,4);
+    max7219_write(5,5);
+    max7219_write(6,6);
+    max7219_write(7,7);
+    max7219_write(8,8);
+    max7219_write(9,9);
+    max7219_write(10,0xa);
+    max7219_write(11,0xb);
+    max7219_write(12,0xc);
+    max7219_write(13,0xd);
+    max7219_write(14,0xe);
+    max7219_write(15,0xf);
+    max7219_write(16,0x80);
+    max7219_write(17,'H');
+    max7219_write(18,'P');
+    max7219_write(19,'_');
+    max7219_write(20,' ');
+    max7219_write(21,'-');
+    max7219_write(22,'L');
+    max7219_write(23,'r');
+    max7219_write(24,'.');
+```
+
+![all_didplay](/example/figer/all_display.png)
 
 
 5. 亮度设置
@@ -144,9 +195,8 @@ int max7219_intensity_set(uint8_t value)
 ## 注意事项
 
 1. 参数中的dig和硬件设计的数码管顺序有关。
-2. 支持非编码模式和全编码模式，建议只用非编码模式，所以不加编码配置选项，可以在[drv_max7219.h](./inc/drv_max7219.h)的 `MAX7219_INFO_DEFAULT` 选择配置。
-3. 你还可以搞自定义字符，不过编码要去手册里面找，比如 写出 `r` 的编码为 0x05。
-4. 亮度只支持 0 到 f。
+2. 建议只用非编码模式，所以不加编码配置选项，可以在[drv_max7219.h](./inc/drv_max7219.h)的 `MAX7219_INFO_DEFAULT` 选择配置。
+3. 你还可以搞其他自定义字符，不过编码要去手册里面找。
 5. 还没有用到点阵的驱动，后续会在这块优化更新。
 
 ## 5、联系方式 & 感谢
