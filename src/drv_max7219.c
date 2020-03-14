@@ -160,11 +160,10 @@ static uint8_t dig_of_the_chip(uint16_t chip, uint8_t position)
     case 0xc0:
     case 0x80:
         return position;
-        break;
     }
 
     /* Discontinuous */
-    for( i = 1; i <= 8; i++)
+    for(uint8_t i = 1; i <= 8; i++)
     {
         if(value & 0x80)
         {
@@ -195,7 +194,7 @@ static uint8_t dig_of_the_chip(uint16_t chip, uint8_t position)
 static int position_of_device(uint16_t dig_num, uint16_t* chip_select, uint8_t *dig_select)
 {
     RT_ASSERT(chip_select != RT_NULL);
-    RT_ASSERT(dig_chip != RT_NULL);
+    RT_ASSERT(dig_select != RT_NULL);
     RT_ASSERT((dig_num != 0) && (dig_num <= _max7219.info.scan_nums));
 
     for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
@@ -352,7 +351,7 @@ int max7219_write_dig(uint16_t dig, uint8_t data)
         return -RT_ERROR;
     }
 
-    if(RT_EOK == dig_all_to_chip(dig, &chip_select, &dig_chip))
+    if(RT_EOK == position_of_device(dig, &chip_select, &dig_chip))
     {
         return max7219_write_chip(chip_select, dig_chip, data);
     }
@@ -382,9 +381,9 @@ int max7219_write(uint16_t dig, uint8_t data)
         return -RT_ERROR;
     }
 
-    if(RT_EOK == dig_all_to_chip(dig, &chip_select, &dig_chip))
+    if(RT_EOK == position_of_device(dig, &chip_select, &dig_chip))
     {
-        return max7219_write_chip(chip_select, dig_chip, num);
+        return max7219_write_chip(chip_select, dig_chip, data);
     }
 
     return -RT_ERROR;
@@ -402,10 +401,7 @@ int max7219_intensity_set(uint8_t value)
 {
     for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
     {
-        if(-RT_ERROR == max7219_intensity_set_chip(chip, value))
-        {
-            return -RT_ERROR;
-        }
+        max7219_reg_write(chip, REG_ADDR_INTENSITY, value);
     }
     return RT_EOK;
 }
