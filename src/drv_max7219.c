@@ -361,7 +361,8 @@ int max7219_write_dig(uint16_t dig, uint8_t data)
 
 /**
  * Write numbers and characters to the register through the digital tube number
- * @note support digtal 0x0 to 0xf.,support char ' ' '-' '_' 'H' 'h' 'P' 'p' 'r' '.
+ * @note support digtal 0x0 to 0xf.,support char ' ' '-' '_' 'H' 'h' 'P' 'p' 'r' '.,
+ * @note support x+dp ,If the most significant bit is valid, dots are also displayed.
  *
  * @param dig Position in all digital tubes
  * @param data numbers and characters
