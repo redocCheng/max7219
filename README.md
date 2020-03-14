@@ -103,7 +103,7 @@ int max7219_clear_all(void)
 |RT_EOK|正常|
 |-RT_ERROR|异常|
 
-3. 向数码管寄存器写入线段数据
+2. 向数码管寄存器写入线段数据
 
 ```C
 int max7219_write_dig(uint16_t dig, uint8_t data);
@@ -120,7 +120,7 @@ int max7219_write_dig(uint16_t dig, uint8_t data);
 
 说明：直接将数据写入显示寄存器，即直接控制(DP/A/B/C/D/E/F/G)。
 
-4. 向数码管寄存器写入数字和字符
+3. 向数码管寄存器写入数字和字符
 
 ```C
 int max7219_write(uint16_t dig, uint8_t data);
@@ -165,10 +165,10 @@ int max7219_write(uint16_t dig, uint8_t data);
     max7219_write(24,'.');
 ```
 
-![all_didplay](/example/figer/all_display.png)
+![all_display.png](https://github.com/redocCheng/max7219/blob/master/examples/figer/all_display.png)
 
 
-5. 亮度设置
+4. 亮度设置
 
 ```C
 int max7219_intensity_set(uint8_t value)
