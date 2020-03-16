@@ -29,6 +29,10 @@
 #error "You must defined MAX7219_CHIPS_SCAN_NUMBER_TABLE on 'max7219_cfg.h'"
 #endif
 
+/*  单片最大8个 */
+#define MAX7219_SIGLE_DIG_NUM_MAX     (8)
+#define MAX7219_POSITION_BUF_NUM      (MAX7219_CHIPS_NUMBER*MAX7219_SIGLE_DIG_NUM_MAX)
+
 typedef enum
 {
     SHUTDOWN_MODE_SHUTDOWN = 0,
@@ -80,15 +84,24 @@ typedef enum
     0,                                 \
 }
 
+typedef struct
+{
+	uint16_t chip;		/*  芯片在全局位置          */
+	uint8_t  dig;		/*  管脚在芯片的位置        */
+	
+}max7219_position_t;
+
+
 /*   max7219设置结构体   */
 struct rt_device_max7219_info
 {
-    shutdown_t    shutdown_mode;                            /*  关断模式        */
-    decode_mode_t decode_mode;	                            /*  译码模式        */
-    uint8_t       intensity;                                /*  亮度(0-f)       */
-    uint8_t       work_mode;                                /*  工作模式        */
-    uint8_t       scan_num_buf[MAX7219_CHIPS_NUMBER];       /*  单片扫描个数    */
-    uint16_t      scan_nums;                                /*  扫描总数        */
+    shutdown_t         shutdown_mode;                            /*  关断模式        */
+    decode_mode_t      decode_mode;	                             /*  译码模式        */
+    uint8_t            intensity;                                /*  亮度(0-f)       */
+    uint8_t            work_mode;                                /*  工作模式        */
+    uint8_t            scan_num_buf[MAX7219_CHIPS_NUMBER];       /*  单片扫描个数    */
+	max7219_position_t position_buf[MAX7219_POSITION_BUF_NUM];   /*  定位buf         */
+    uint16_t           scan_nums;                                /*  扫描总数        */
 };
 
 int max7219_clear_all(void);
