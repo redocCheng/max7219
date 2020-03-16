@@ -67,13 +67,13 @@ const uint8_t no_code_num_buf[16] = {0x7e, 0x30, 0x6d, 0x79, 0x33, 0x5b, 0x5f, 0
 
 static struct drv_max7219_device _max7219;
 
-static void max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data);
+static int max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data);
 static uint8_t position_of_last_one(uint8_t dig_config);
 static uint8_t dig_of_the_chip(uint16_t chip, uint8_t position);
 static int position_of_device_cal(uint16_t dig_num, max7219_position_t *position);
 static int position_of_device_read(uint16_t dig_num, max7219_position_t *position);
-static int max7219_write_chip(uint16_t chip, uint8_t dig, uint8_t data);
-static int max7219_write_dig_chip(uint16_t chip, uint8_t dig, uint8_t data);
+static int max7219_write_chip(max7219_position_t position, uint8_t data);
+static int max7219_write_dig_chip(max7219_position_t position, uint8_t data);
 static void max7219_init(void);
 
 /**
@@ -83,9 +83,9 @@ static void max7219_init(void);
  * @param cmd  the reg address
  * @param data the write value
  *
- * @return void
+ * @return int return result
  */
-static void max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data)
+static int max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data)
 {
     RT_ASSERT(chip < MAX7219_CHIPS_NUMBER);
 
@@ -97,7 +97,13 @@ static void max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data)
 
     size = 2 + (2 * chip);
 
-    rt_spi_send(_max7219.spi_device, send_buf, size);
+    if(size != rt_spi_send(_max7219.spi_device, send_buf, size))
+    {
+        log_e("rt spi send size fault.");
+        return -RT_ERROR;
+    }
+    
+    return RT_EOK;
 }
 
 /**
@@ -187,15 +193,13 @@ static uint8_t dig_of_the_chip(uint16_t chip, uint8_t position)
  * @note dig must less the scan_nums.
  *
  * @param dig the continuous dig num
- * @param chip_select return the chip
- * @param dig_chip    return the dig
+ * @param position position on the device
  *
  * @return int
  */
 static int position_of_device_cal(uint16_t dig_num, max7219_position_t *position)
 {
-    RT_ASSERT(chip_select != RT_NULL);
-    RT_ASSERT(dig_select != RT_NULL);
+    RT_ASSERT(position != RT_NULL);
     RT_ASSERT((dig_num != 0) && (dig_num <= _max7219.info.scan_nums));
 
     for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
@@ -220,8 +224,7 @@ static int position_of_device_cal(uint16_t dig_num, max7219_position_t *position
  * @note dig must less the scan_nums.
  *
  * @param dig the continuous dig num
- * @param chip_select return the chip
- * @param dig_chip    return the dig
+ * @param position position on the device
  *
  * @return int
  */
@@ -232,7 +235,7 @@ static int position_of_device_read(uint16_t dig_num, max7219_position_t *positio
 
     rt_memcpy(position, &_max7219.info.position_buf[dig_num - 1], sizeof(max7219_position_t));
      
-    return -RT_ERROR;
+    return RT_EOK;
 }
 
 
@@ -247,19 +250,14 @@ static int position_of_device_read(uint16_t dig_num, max7219_position_t *positio
  */
 static int max7219_write_dig_chip(max7219_position_t position, uint8_t data)
 {
-    RT_ASSERT(dig != 0);
-	
-    max7219_reg_write(position.chip, position.dig, data);
-	
-    return RT_EOK;
+    return max7219_reg_write(position.chip, position.dig, data);
 }
 
 /**
  * Write numbers and characters to the register through the digital tube number
  * @note
  *
- * @param chip the chip select
- * @param dig Position in a single nixie tube
+ * @param position position on the device
  * @param data Numbers and characters
  *
  * @return int return result
@@ -320,9 +318,7 @@ static int max7219_write_chip(max7219_position_t position, uint8_t data)
 
     value |= dp;
 
-    max7219_write_dig_chip(position, value);
-
-    return RT_EOK;
+    return max7219_write_dig_chip(position, value);
 }
 
 /**
@@ -334,7 +330,11 @@ int max7219_clear_all(void)
 {
     for(uint16_t dig = 1; dig <= _max7219.info.scan_nums; dig++)
 	{
-		max7219_reg_write(_max7219.info.position_buf[dig - 1].chip, _max7219.info.position_buf[dig - 1].dig, 0);
+        if(-RT_ERROR == max7219_reg_write(_max7219.info.position_buf[dig - 1].chip, _max7219.info.position_buf[dig - 1].dig, 0))
+        {
+            log_e("max7219 clear fail.");
+            return -RT_ERROR;
+        }
 	}
 	
     return RT_EOK;
@@ -361,9 +361,9 @@ int max7219_write_dig(uint16_t dig, uint8_t data)
         return -RT_ERROR;
     }
 
-    if(RT_EOK == position_of_device_read(dig, &position)
+    if(RT_EOK == position_of_device_read(dig, &position))
     {
-        return max7219_write_dig_chip(position.chip, position.dig, data);
+        return max7219_write_dig_chip(position, data);
     }
 
     return -RT_ERROR;
@@ -391,9 +391,9 @@ int max7219_write(uint16_t dig, uint8_t data)
         return -RT_ERROR;
     }
 
-    if(RT_EOK == position_of_device_read(dig, &position)
+    if(RT_EOK == position_of_device_read(dig, &position))
     {
-        return max7219_write_chip(position.chip, position.dig, data);
+        return max7219_write_chip(position, data);
     }
 
     return -RT_ERROR;
@@ -409,9 +409,19 @@ int max7219_write(uint16_t dig, uint8_t data)
  */
 int max7219_intensity_set(uint8_t value)
 {
+	if(value > 0xf)
+	{
+		log_e("intensity param fault.");
+		return -RT_ERROR;
+	}
+	
     for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
     {
-        max7219_reg_write(chip, REG_ADDR_INTENSITY, value);
+        if(-RT_ERROR == max7219_reg_write(chip, REG_ADDR_INTENSITY, value))
+        {
+            log_e("intensity set fail.");
+            return -RT_ERROR;
+        }
     }
     return RT_EOK;
 }
@@ -434,7 +444,7 @@ static void max7219_init(void)
 
 	for(uint16_t dig = 1; dig <= _max7219.info.scan_nums; dig++)
 	{
-		position_of_device_cal(dig, _max7219.info.position_buf[dig - 1].chip, _max7219.info.position_buf[dig - 1].dig);
+		position_of_device_cal(dig, &_max7219.info.position_buf[dig - 1]);
 	}
 	
     log_d("max7219 init.");

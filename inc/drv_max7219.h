@@ -84,6 +84,7 @@ typedef enum
     0,                                 \
 }
 
+/*   max7219位置结构体   */
 typedef struct
 {
 	uint16_t chip;		/*  芯片在全局位置          */
