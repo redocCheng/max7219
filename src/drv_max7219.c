@@ -13,15 +13,17 @@
 #include "string.h"
 #include "drv_spi.h"
 
-//#define DRV_DEBUG
+#define DRV_DEBUG
 #define LOG_TAG "drv.max7219"
 #include <drv_log.h>
 
 
 struct drv_max7219_device
 {
-    struct rt_spi_device *spi_device;
+    struct rt_spi_device         *spi_device;
     struct rt_device_max7219_info info;
+    
+    max7219_position_t            *position_buf; 
 };
 
 
@@ -116,8 +118,6 @@ static int max7219_reg_write(uint16_t chip, uint8_t cmd, uint8_t data)
  */
 static uint8_t position_of_last_one(uint8_t dig_config)
 {
-    RT_ASSERT(dig_config <= 8);
-
     if(dig_config == 0)
     {
         return 0;
@@ -233,7 +233,7 @@ static int position_of_device_read(uint16_t dig_num, max7219_position_t *positio
     RT_ASSERT(position != RT_NULL);
     RT_ASSERT((dig_num != 0) && (dig_num <= _max7219.info.scan_nums));
 
-    rt_memcpy(position, &_max7219.info.position_buf[dig_num - 1], sizeof(max7219_position_t));
+    rt_memcpy(position, &_max7219.position_buf[dig_num - 1], sizeof(max7219_position_t));
      
     return RT_EOK;
 }
@@ -318,7 +318,7 @@ static int max7219_write_chip(max7219_position_t position, uint8_t data)
 
     value |= dp;
 
-    return max7219_write_dig_chip(position, value);
+    return max7219_reg_write(position.chip, position.dig, value);
 }
 
 /**
@@ -329,14 +329,14 @@ static int max7219_write_chip(max7219_position_t position, uint8_t data)
 int max7219_clear_all(void)
 {
     for(uint16_t dig = 1; dig <= _max7219.info.scan_nums; dig++)
-    {
-        if(-RT_ERROR == max7219_reg_write(_max7219.info.position_buf[dig - 1].chip, _max7219.info.position_buf[dig - 1].dig, 0))
+	{
+        if(-RT_ERROR == max7219_reg_write(_max7219.position_buf[dig - 1].chip, _max7219.position_buf[dig - 1].dig, 0))
         {
             log_e("max7219 clear fail.");
             return -RT_ERROR;
         }
-    }
-    
+	}
+	
     return RT_EOK;
 }
 
@@ -353,7 +353,7 @@ int max7219_write_dig(uint16_t dig, uint8_t data)
 {
     RT_ASSERT(dig != 0);
 
-    max7219_position_t position;
+	max7219_position_t position;
 
     if(dig > _max7219.info.scan_nums)
     {
@@ -371,7 +371,7 @@ int max7219_write_dig(uint16_t dig, uint8_t data)
 
 /**
  * Write numbers and characters to the register through the digital tube number
- * @note support digtal 0x0 to 0xf.,support char ' ' '-' '_' 'H' 'h' 'P' 'p' 'r' '.,
+ * @note support digtal 0x0 to 0xf.,support char ' ' '-' '_' 'H' 'h' 'P' 'p' 'r' '.'
  * @note support x+dp ,If the most significant bit is valid, dots are also displayed.
  *
  * @param dig Position in all digital tubes
@@ -409,12 +409,12 @@ int max7219_write(uint16_t dig, uint8_t data)
  */
 int max7219_intensity_set(uint8_t value)
 {
-    if(value > 0xf)
-    {
-        log_e("intensity param fault.");
-        return -RT_ERROR;
-    }
-    
+	if(value > 0xf)
+	{
+		log_e("intensity param fault.");
+		return -RT_ERROR;
+	}
+	
     for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
     {
         if(-RT_ERROR == max7219_reg_write(chip, REG_ADDR_INTENSITY, value))
@@ -436,17 +436,19 @@ static void max7219_init(void)
         max7219_reg_write(chip, REG_ADDR_DISPTEST, _max7219.info.work_mode);
         max7219_reg_write(chip, REG_ADDR_DECODEMODE, _max7219.info.decode_mode);
 
-        max7219_reg_write(chip, REG_ADDR_SCANLIMIT, position_of_last_one(_max7219.info.scan_num_buf[chip]) - 1);
+        max7219_reg_write(chip, REG_ADDR_SCANLIMIT, (position_of_last_one(_max7219.info.scan_num_buf[chip]) - 1));
         max7219_reg_write(chip, REG_ADDR_INTENSITY, _max7219.info.intensity);
 
         _max7219.info.scan_nums += one_number_buf[_max7219.info.scan_num_buf[chip]];
     }
 
-    for(uint16_t dig = 1; dig <= _max7219.info.scan_nums; dig++)
-    {
-        position_of_device_cal(dig, &_max7219.info.position_buf[dig - 1]);
-    }
+    _max7219.position_buf = rt_malloc(_max7219.info.scan_nums * sizeof(max7219_position_t));
     
+	for(uint16_t dig = 1; dig <= _max7219.info.scan_nums; dig++)
+	{
+		position_of_device_cal(dig, &_max7219.position_buf[dig - 1]);
+	}
+	 
     log_d("max7219 init.");
 }
 
@@ -454,7 +456,6 @@ int drv_max7219_hw_init(void)
 {
     struct rt_device_max7219_info info = MAX7219_INFO_DEFAULT;
 
-    memset(&_max7219, 0x00, sizeof(_max7219));
     memcpy(&_max7219.info, &info,sizeof(struct rt_device_max7219_info));
 
     _max7219.spi_device = (struct rt_spi_device *)rt_device_find(MAX7219_SPI_DEVICE_NAME);
