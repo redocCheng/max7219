@@ -329,14 +329,14 @@ static int max7219_write_chip(max7219_position_t position, uint8_t data)
 int max7219_clear_all(void)
 {
     for(uint16_t dig = 1; dig <= _max7219.info.scan_nums; dig++)
-	{
+    {
         if(-RT_ERROR == max7219_reg_write(_max7219.info.position_buf[dig - 1].chip, _max7219.info.position_buf[dig - 1].dig, 0))
         {
             log_e("max7219 clear fail.");
             return -RT_ERROR;
         }
-	}
-	
+    }
+    
     return RT_EOK;
 }
 
@@ -353,7 +353,7 @@ int max7219_write_dig(uint16_t dig, uint8_t data)
 {
     RT_ASSERT(dig != 0);
 
-	max7219_position_t position;
+    max7219_position_t position;
 
     if(dig > _max7219.info.scan_nums)
     {
@@ -409,12 +409,12 @@ int max7219_write(uint16_t dig, uint8_t data)
  */
 int max7219_intensity_set(uint8_t value)
 {
-	if(value > 0xf)
-	{
-		log_e("intensity param fault.");
-		return -RT_ERROR;
-	}
-	
+    if(value > 0xf)
+    {
+        log_e("intensity param fault.");
+        return -RT_ERROR;
+    }
+    
     for(uint8_t chip = 0; chip < MAX7219_CHIPS_NUMBER; chip++)
     {
         if(-RT_ERROR == max7219_reg_write(chip, REG_ADDR_INTENSITY, value))
@@ -442,11 +442,11 @@ static void max7219_init(void)
         _max7219.info.scan_nums += one_number_buf[_max7219.info.scan_num_buf[chip]];
     }
 
-	for(uint16_t dig = 1; dig <= _max7219.info.scan_nums; dig++)
-	{
-		position_of_device_cal(dig, &_max7219.info.position_buf[dig - 1]);
-	}
-	
+    for(uint16_t dig = 1; dig <= _max7219.info.scan_nums; dig++)
+    {
+        position_of_device_cal(dig, &_max7219.info.position_buf[dig - 1]);
+    }
+    
     log_d("max7219 init.");
 }
 
