@@ -13,7 +13,7 @@
 #include "string.h"
 #include "drv_spi.h"
 
-#define DRV_DEBUG
+//#define DRV_DEBUG
 #define LOG_TAG "drv.max7219"
 #include <drv_log.h>
 
@@ -435,10 +435,8 @@ static void max7219_init(void)
         max7219_reg_write(chip, REG_ADDR_SHUTDOWN, _max7219.info.shutdown_mode);
         max7219_reg_write(chip, REG_ADDR_DISPTEST, _max7219.info.work_mode);
         max7219_reg_write(chip, REG_ADDR_DECODEMODE, _max7219.info.decode_mode);
-
         max7219_reg_write(chip, REG_ADDR_SCANLIMIT, (position_of_last_one(_max7219.info.scan_num_buf[chip]) - 1));
         max7219_reg_write(chip, REG_ADDR_INTENSITY, _max7219.info.intensity);
-
         _max7219.info.scan_nums += one_number_buf[_max7219.info.scan_num_buf[chip]];
     }
 
@@ -448,8 +446,6 @@ static void max7219_init(void)
     {
         position_of_device_cal(dig, &_max7219.position_buf[dig - 1]);
     }
-     
-    log_d("max7219 init.");
 }
 
 int drv_max7219_hw_init(void)
