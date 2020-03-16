@@ -45,7 +45,7 @@ typedef enum
     DECODE_MODE_NO_DEC_FOR_8_1                  = 0x00,
     DECODE_MODE_CODE_B_FOR_1_NO_DEC_FOR_8_2     = 0x01,   /*   不支持   */
     DECODE_MODE_CODE_B_FOR_4_1_NO_DEC_FOR_8_5   = 0x0f,   /*   不支持   */
-    DECODE_MODE_CODE_B_FOR_8_1                  = 0xff,
+    DECODE_MODE_CODE_B_FOR_8_1                  = 0xff,   /*   不支持   */
 
 }decode_mode_t;
 
