@@ -97,7 +97,7 @@ RT-Thread online packages
 
 如下图，从左到右显示：
 
-![config.png](./examples/figer/config.png)
+![config.png](examples/figer/config.png)
 
 
 
@@ -180,7 +180,7 @@ int max7219_write(uint16_t dig, uint8_t data);
     max7219_write(24,'.');
 ```
 
-![all_display.png](./examples/figer/all_display.png)
+![all_display.png](examples/figer/all_display.png)
 
 
 4. 亮度设置
