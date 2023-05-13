@@ -197,6 +197,20 @@ int max7219_intensity_set(uint8_t value)
 |RT_EOK|成功|
 |!=RT_OK|异常|
 
+4. 翻转显示设置
+
+```C
+int max7219_position_flip_set(uint16_t dig, uint8_t data)
+```
+
+|参数|注释|
+|----|----|
+|dig|在所有数码管中的位置，未加入配置的数码管，不进行计数|
+|data|数据|
+|返回|注释|
+|----|----|
+|!=-RT_ERROR|成功|
+|-RT_ERROR|异常|
 
 ## 示例
 
