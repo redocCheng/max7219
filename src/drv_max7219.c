@@ -193,11 +193,12 @@ static uint8_t dig_of_the_chip(uint16_t chip, uint8_t position)
  * @note dig must less the scan_nums.
  *
  * @param dig the continuous dig num
+ * @param turn_flag Flip the display
  * @param position position on the device
  *
  * @return int
  */
-static int position_of_device_cal(uint16_t dig_num, max7219_position_t *position)
+static int position_of_device_cal(uint16_t dig_num, bool flip, max7219_position_t *position)
 {
     RT_ASSERT(position != RT_NULL);
     RT_ASSERT((dig_num != 0) && (dig_num <= _max7219.info.scan_nums));
@@ -208,6 +209,7 @@ static int position_of_device_cal(uint16_t dig_num, max7219_position_t *position
         {
             position->chip = chip;
             position->dig  = dig_of_the_chip(chip, dig_num);
+            position->flip = flip;
             return RT_EOK;
         }
         else
@@ -251,6 +253,28 @@ static int position_of_device_read(uint16_t dig_num, max7219_position_t *positio
 static int max7219_write_dig_chip(max7219_position_t position, uint8_t data)
 {
     return max7219_reg_write(position.chip, position.dig, data);
+}
+
+/**
+ * Flip the display of the digital tube
+ *
+ * @param data Data that needs to be flipped
+ *
+ * @return int
+ */
+static uint8_t max7219_write_dig_chip(uint8_t data)
+{
+    uint8_t value = 0;
+    max7219_flip_bits max7219_data_bits = {.w = data};
+    //ABCDEFGG----->DEFABCG
+    value = max7219_data_bits.b.bit0_g \
+            + (max7219_data_bits.b.bit4_c << 1) \
+            + (max7219_data_bits.b.bit5_b << 2) \
+            + (max7219_data_bits.b.bit6_a << 3) \
+            + (max7219_data_bits.b.bit1_f << 4) \
+            + (max7219_data_bits.b.bit2_e << 5) \
+            + (max7219_data_bits.b.bit3_d << 6);
+    return value;
 }
 
 /**
@@ -317,6 +341,11 @@ static int max7219_write_chip(max7219_position_t position, uint8_t data)
     }
 
     value |= dp;
+
+    if(position.flip == true)
+    {
+        value = max7219_write_dig_chip(value);
+    }
 
     return max7219_reg_write(position.chip, position.dig, value);
 }
@@ -426,6 +455,35 @@ int max7219_intensity_set(uint8_t value)
     return RT_EOK;
 }
 
+/**
+ * Flip the display
+ * @note no note.
+ *
+ * @param dig Position in all digital tubes
+ * @param data Flip flag
+ *
+ * @return int
+ */
+int max7219_position_flip_set(uint16_t dig, uint8_t data)
+{
+    RT_ASSERT(dig != 0);
+
+    max7219_position_t position;
+
+    if(dig > _max7219.info.scan_nums)
+    {
+        log_e("dig num fault.");
+        return -RT_ERROR;
+    }
+
+    if(RT_EOK == position_of_device_read(dig, &position))
+    {
+        return position.flip = data;
+    }
+
+    return -RT_ERROR;
+}
+
 static void max7219_init(void)
 {
     _max7219.info.scan_nums = 0;
@@ -444,7 +502,7 @@ static void max7219_init(void)
     
     for(uint16_t dig = 1; dig <= _max7219.info.scan_nums; dig++)
     {
-        position_of_device_cal(dig, &_max7219.position_buf[dig - 1]);
+        position_of_device_cal(dig, false, &_max7219.position_buf[dig - 1]);
     }
 }
 

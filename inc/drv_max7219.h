@@ -89,9 +89,26 @@ typedef struct
 {
 	uint16_t chip;		/*  芯片在全局位置          */
 	uint8_t  dig;		/*  管脚在芯片的位置        */
+    bool flip;	        /*  翻转显示功能开关        */
 	
 }max7219_position_t;
 
+/*   max7219旋转180度位置结构体   */
+typedef union
+{
+	struct{
+        uint8_t bit0_g:1;               
+        uint8_t bit1_f:1;                   
+        uint8_t bit2_e:1;                   
+        uint8_t bit3_d:1;               
+        uint8_t bit4_c:1;                   
+        uint8_t bit5_b:1;  
+        uint8_t bit6_a:1;               
+        uint8_t bit7_dp:1;                             
+    }b;
+    uint8_t w;
+	
+}max7219_flip_bits;
 
 /*   max7219设置结构体   */
 struct rt_device_max7219_info
@@ -109,5 +126,5 @@ int max7219_clear_all(void);
 int max7219_write_dig(uint16_t dig, uint8_t data);
 int max7219_write(uint16_t dig, uint8_t data);
 int max7219_intensity_set(uint8_t value);
-
+int max7219_position_flip_set(uint16_t dig, uint8_t data);
 #endif
